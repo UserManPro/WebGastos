@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0d12">
+<title>Gastos · V6</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+:root{--bg:#080a0f;--panel:#10141c;--panel2:#151a24;--line:#252c39;--text:#f5f7fb;--muted:#8d97a8;--accent:#7c5cff;--accent2:#5b8cff;--danger:#ff5364;--ok:#31c48d;--shadow:0 20px 60px #0008}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#17172d 0,#080a0f 40%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.hidden{display:none!important}.center{min-height:100vh;display:grid;place-items:center;padding:24px}
+.auth-card{width:min(460px,100%);background:#10141cf2;border:1px solid var(--line);border-radius:24px;padding:30px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:25px}.logo-mark{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:900;font-size:20px}.logo h1{font-size:20px;margin:0}.logo p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:#0a0d13;padding:4px;border-radius:12px;margin-bottom:22px}.auth-tabs button{border:0;background:transparent;color:var(--muted);padding:10px;border-radius:9px}.auth-tabs button.active{background:#202637;color:#fff}
+label{display:block;font-size:13px;color:#aeb6c5;margin:0 0 7px}input,select,textarea{width:100%;background:#0b0f16;border:1px solid var(--line);color:var(--text);border-radius:11px;padding:12px 13px;outline:none;transition:.2s}input:focus,select:focus,textarea:focus{border-color:#705cff;box-shadow:0 0 0 3px #705cff18}textarea{min-height:88px;resize:vertical}.field{margin-bottom:15px}
+.primary{width:100%;border:0;border-radius:12px;padding:12px 15px;color:#fff;font-weight:750;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 24px #5b5cff25}.secondary{border:1px solid var(--line);background:#151a24;color:#e8ebf1;border-radius:10px;padding:10px 13px}.danger{border:1px solid #5c2830;background:#281217;color:#ffb5bd}.small{font-size:12px;color:var(--muted)}.link{border:0;background:none;color:#a99aff;padding:5px 0}.message{padding:11px 12px;border-radius:10px;margin:12px 0;font-size:13px;background:#151a24;color:#cfd5df}.message.error{background:#2b1318;color:#ffb7bf;border:1px solid #5c2830}.message.ok{background:#0f2820;color:#9ee9c9;border:1px solid #1d634c}
+.app{min-height:100vh}.topbar{height:72px;border-bottom:1px solid var(--line);background:#0a0d12dd;backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:20}.brand{display:flex;align-items:center;gap:10px;font-weight:800}.brand-mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:14px}.userbox{display:flex;align-items:center;gap:12px}.user-name{font-size:13px}.user-email{font-size:11px;color:var(--muted)}
+.container{width:min(1250px,calc(100% - 32px));margin:26px auto 60px}.welcome{margin-bottom:24px}.welcome h2{margin:0;font-size:29px;letter-spacing:-.8px}.welcome p{color:var(--muted);margin:6px 0 0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}.stat{background:linear-gradient(145deg,#121721,#0e1219);border:1px solid var(--line);border-radius:16px;padding:18px}.stat .k{color:var(--muted);font-size:12px}.stat .v{font-size:25px;font-weight:800;margin-top:8px}.stat .s{font-size:11px;color:#707a8b;margin-top:5px}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start}.card{background:#10141c;border:1px solid var(--line);border-radius:18px;padding:18px}.card h3{margin:0 0 15px;font-size:16px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{flex:1}
+.toggle{display:flex;align-items:center;gap:9px;color:#c7ceda;font-size:13px;margin:7px 0 15px}.toggle input{width:auto}
+.filters{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:9px;margin-bottom:14px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px}table{width:100%;border-collapse:collapse;min-width:730px}th,td{padding:12px 13px;border-bottom:1px solid #202632;text-align:left;font-size:13px}th{color:#8f99aa;font-size:11px;text-transform:uppercase;letter-spacing:.06em;background:#0d1118}tr:last-child td{border-bottom:0}.amount{font-weight:750}.badge{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;background:#1b2230;color:#c7cfdd}.badge.ok{background:#103328;color:#9ce6c7}.refund-paid{background:#dff7e9;color:#187a4c;border:1px solid #bde9d0}.refund-pending{background:#ffe7e7;color:#a33a3a;border:1px solid #f3c3c3}.refund-none{background:#202633;color:#aeb7c7}.refund-box{display:grid;gap:8px;margin-top:4px}.refund-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px 11px;background:#0c1119;border:1px solid var(--line);border-radius:11px}.refund-row label{margin:0;display:flex;align-items:center;gap:8px;color:#d8deea}.refund-row input{width:auto}.refund-status{font-size:12px;color:#aeb6c5}.refund-status input{margin-right:6px}.refund-help{font-size:11px;color:#7f899a;margin-top:7px}.people-list{display:grid;gap:8px}.person-option{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px 11px;background:#0c1119;border:1px solid var(--line);border-radius:11px}.person-option .person-check{display:flex;align-items:center;gap:9px;margin:0;color:#d8deea}.person-option input{width:auto}.person-option .paid-check{font-size:12px;color:#aeb6c5;display:flex;align-items:center;gap:6px;margin:0}.manage-people{display:flex;gap:8px;align-items:center;margin-top:9px}.manage-people button{flex:0 0 auto}.people-empty{padding:12px;border:1px dashed var(--line);border-radius:11px;color:var(--muted);font-size:12px}.person-manager-list{display:grid;gap:8px;margin:15px 0}.person-manager-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0c1119;border:1px solid var(--line);border-radius:10px}.person-manager-item span{font-size:13px}.person-manager-item button{flex:0 0 auto}.modal-actions{display:flex;gap:8px;margin-top:15px}.modal-actions .primary{width:auto;flex:1}.person-help{font-size:11px;color:#7f899a;margin-top:6px}.icon-btn{border:1px solid var(--line);background:#141923;color:#cfd5df;border-radius:8px;padding:6px 8px}.icon-btn.delete:hover{background:#35141b;color:#ffb6bf}.empty{padding:35px;text-align:center;color:var(--muted)}
+.summary-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}.summary-total{font-size:14px;color:#b6bfce}.summary-total strong{color:#fff;font-size:19px}.split-note{font-size:11px;color:#8f99aa}
+.modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;padding:18px;z-index:50}.modal-box{width:min(540px,100%);background:#111620;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow);max-height:92vh;overflow:auto}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.modal-head h3{margin:0}.close{border:0;background:transparent;color:#9da7b8;font-size:23px}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.topbar{padding:0 14px;height:64px}.user-name{display:none}.container{width:min(100% - 20px,1250px);margin-top:18px}.stats{gap:9px}.stat{padding:14px}.stat .v{font-size:21px}.row{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.card{padding:14px}.welcome h2{font-size:24px}.auth-card{padding:23px}}
+</style>
+</head>
+<body>
+
+<div id="authScreen" class="center">
+  <div class="auth-card">
+    <div class="logo">
+      <div class="logo-mark">€</div>
+      <div><h1>Gastos</h1><p>Tu control de gastos, en cualquier dispositivo.</p></div>
+    </div>
+
+    <div class="auth-tabs">
+      <button id="tabLogin" class="active" type="button">Iniciar sesión</button>
+      <button id="tabRegister" type="button">Crear cuenta</button>
+    </div>
+
+    <form id="loginForm">
+      <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="email" required></div>
+      <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+      <button class="primary" type="submit">Entrar</button>
+      <div style="text-align:center;margin-top:10px"><button class="link" id="forgotBtn" type="button">¿Has olvidado tu contraseña?</button></div>
+    </form>
+
+    <form id="registerForm" class="hidden">
+      <div class="field"><label>Tu nombre</label><input id="registerName" type="text" maxlength="80" autocomplete="name" required></div>
+      <div class="field"><label>Email</label><input id="registerEmail" type="email" autocomplete="email" required></div>
+      <div class="field"><label>Contraseña</label><input id="registerPassword" type="password" minlength="6" autocomplete="new-password" required></div>
+      <div class="field"><label>Repite la contraseña</label><input id="registerPassword2" type="password" minlength="6" autocomplete="new-password" required></div>
+      <button class="primary" type="submit">Crear mi cuenta</button>
+    </form>
+    <div id="authMessage" class="message hidden"></div>
+  </div>
+</div>
+
+<div id="appScreen" class="app hidden">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">€</div><span>Gastos</span></div>
+    <div class="userbox">
+      <div><div id="userName" class="user-name"></div><div id="userEmail" class="user-email"></div></div>
+      <button id="logoutBtn" class="secondary" type="button">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="welcome">
+      <h2>Resumen de tus gastos</h2>
+      <p>Todo lo que registres aquí queda asociado únicamente a tu cuenta.</p>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><div class="k">ESTE MES</div><div id="monthTotal" class="v">0,00 €</div><div class="s">Gastos registrados este mes</div></div>
+      <div class="stat"><div class="k">ESTA SEMANA</div><div id="weekTotal" class="v">0,00 €</div><div class="s">De lunes a domingo</div></div>
+      <div class="stat"><div class="k">ME DEBEN</div><div id="owedTotal" class="v">0,00 €</div><div class="s">Importes marcados para reembolso</div></div>
+      <div class="stat"><div class="k">REGISTRADOS</div><div id="countTotal" class="v">0</div><div class="s">Gastos en tu cuenta</div></div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h3 id="formTitle">Nuevo gasto</h3>
+        <form id="expenseForm">
+          <div class="field"><label>Concepto</label><input id="concept" required maxlength="120" placeholder="Ej. Compra supermercado"></div>
+          <div class="row">
+            <div class="field"><label>Importe (€)</label><input id="amount" type="number" min="0.01" step="0.01" required placeholder="0,00"></div>
+            <div class="field"><label>Fecha</label><input id="expenseDate" type="date" required></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Categoría</label>
+              <select id="category">
+                <option>Comida</option><option>Transporte</option><option>Ocio</option><option>Estudios</option><option>Casa</option><option>Compras</option><option>Suscripciones</option><option>Salud</option><option>Otros</option>
+              </select>
+            </div>
+            <div class="field"><label>Reembolso</label>
+              <div class="toggle" style="margin:0;padding:11px 0"><input id="refundable" type="checkbox"><label for="refundable" style="margin:0">Marcar como reembolsable</label></div>
+            </div>
+          </div>
+          <div class="field hidden" id="refundPeopleWrap">
+            <label>¿Quién debe devolverlo?</label>
+            <div id="refundPeopleList" class="people-list"></div>
+            <div class="manage-people"><button id="managePeopleBtn" class="secondary" type="button">Gestionar personas</button></div>
+            <div class="refund-help">Puedes seleccionar una o varias personas. Si seleccionas varias, el importe se reparte entre ellas. Marca «Reembolsado» solo para quien ya haya pagado.</div>
+          </div>
+                    <div class="field"><label>Notas</label><textarea id="notes" maxlength="500" placeholder="Información adicional (opcional)"></textarea></div>
+          <div class="actions"><button id="saveBtn" class="primary" type="submit">Guardar gasto</button><button id="cancelEditBtn" class="secondary hidden" type="button">Cancelar</button></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="summary-bar">
+          <div><h3 style="margin:0">Tus gastos</h3><div id="filterInfo" class="split-note">Mostrando todos</div></div>
+          <div class="actions" style="justify-content:flex-end">
+            <button id="exportPdfBtn" class="secondary" type="button">PDF</button>
+            <button id="exportPngBtn" class="secondary" type="button">PNG</button>
+            <button id="backupBtn" class="secondary" type="button">Backup</button>
+          </div>
+        </div>
+
+        <div class="filters">
+          <input id="search" placeholder="Buscar concepto o persona...">
+          <select id="period"><option value="all">Todo</option><option value="week">Esta semana</option><option value="month">Este mes</option></select>
+          <select id="categoryFilter"><option value="all">Todas las categorías</option></select>
+          <select id="personFilter"><option value="all">Todas las personas</option></select>
+        </div>
+
+        <div id="reportArea">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Importe</th><th>Reembolso</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="expenseRows"></tbody>
+            </table>
+          </div>
+          <div id="emptyState" class="empty hidden">No hay gastos que coincidan con los filtros.</div>
+          <div style="display:flex;justify-content:flex-end;margin-top:13px" class="summary-total">Total mostrado: <strong id="filteredTotal" style="margin-left:7px">0,00 €</strong></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="peopleModal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Personas que pueden reembolsarte</h3><button id="closePeopleModal" class="close" type="button">×</button></div>
+    <div class="field"><label>Añadir persona</label><div style="display:flex;gap:8px"><input id="newPersonName" maxlength="80" placeholder="Ej. Abuelo, Juan, Madre..."><button id="addPersonBtn" class="primary" style="width:auto;white-space:nowrap" type="button">Añadir</button></div><div class="person-help">No hay límite de personas. Cada cuenta tiene su propia lista.</div></div>
+    <div id="peopleManagerList" class="person-manager-list"></div>
+  </div>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Restablecer contraseña</h3><button id="closeModal" class="close" type="button">×</button></div>
+    <form id="resetForm">
+      <div class="field"><label>Email de tu cuenta</label><input id="resetEmail" type="email" required></div>
+      <button class="primary" type="submit">Enviar enlace</button>
+    </form>
+    <div id="resetMessage" class="message hidden"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://cakplxrkcvhqiqskqmwo.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_guXW8RG3jW2PdPAneRl2hA_qkbgmy8N";
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }
+});
+
+let currentUser = null;
+let expenses = [];
+let people = [];
+let editingId = null;
+
+const $ = id => document.getElementById(id);
+const money = n => new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"}).format(Number(n)||0);
+const todayISO = () => new Date().toISOString().slice(0,10);
+const escapeHtml = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+const dateLabel = d => new Intl.DateTimeFormat("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(d+"T12:00:00"));
+
+function showAuthMessage(text,type=""){ $("authMessage").textContent=text; $("authMessage").className="message"+(type?" "+type:""); $("authMessage").classList.remove("hidden"); }
+function setAuthTab(tab){
+  const login=tab==="login";
+  $("tabLogin").classList.toggle("active",login); $("tabRegister").classList.toggle("active",!login);
+  $("loginForm").classList.toggle("hidden",!login); $("registerForm").classList.toggle("hidden",login);
+  $("authMessage").classList.add("hidden");
+}
+function showApp(){ $("authScreen").classList.add("hidden"); $("appScreen").classList.remove("hidden"); }
+function showAuth(){ $("appScreen").classList.add("hidden"); $("authScreen").classList.remove("hidden"); }
+function monday(d){ const x=new Date(d+"T12:00:00"), day=x.getDay(), diff=day===0?-6:1-day; x.setDate(x.getDate()+diff); return x.toISOString().slice(0,10); }
+function isInCurrentWeek(date){ const t=todayISO(), start=monday(t), x=new Date(start+"T12:00:00"); x.setDate(x.getDate()+6); return date>=start && date<=x.toISOString().slice(0,10); }
+function isInCurrentMonth(date){ return date.slice(0,7)===todayISO().slice(0,7); }
+function effectiveAmount(e){ return Number(e.amount)||0; }
+
+function normalizeReimbursements(e){
+  if(Array.isArray(e.reimbursements)) return e.reimbursements.filter(x=>x && String(x.name||"").trim()).map(x=>({name:String(x.name).trim(),refunded:!!x.refunded}));
+  // Compatibility with the old V3/V4 records.
+  const out=[];
+  const p=String(e.person||"").trim().toLowerCase();
+  if(e.refund_father || p==="padre" || p==="padres" || p==="padre y madre") out.push({name:"Padre",refunded:!!e.refunded_father});
+  if(e.refund_mother || p==="madre" || p==="padres" || p==="padre y madre") out.push({name:"Madre",refunded:!!e.refunded_mother});
+  if(e.other_person && !out.some(x=>x.name.toLowerCase()===String(e.other_person).trim().toLowerCase())) out.push({name:String(e.other_person).trim(),refunded:!!e.refunded_other});
+  return out;
+}
+function isRefundable(e){ return normalizeReimbursements(e).length>0; }
+function outstandingAmount(e){
+  const rs=normalizeReimbursements(e); if(!rs.length) return 0;
+  const share=effectiveAmount(e)/rs.length;
+  return rs.reduce((sum,r)=>sum+(r.refunded?0:share),0);
+}
+function refundStatusText(e){
+  const rs=normalizeReimbursements(e);
+  if(!rs.length) return "Sin reembolso";
+  return rs.map(r=>`${r.name}: ${r.refunded?"Reembolsado":"Pendiente"}`).join(" · ");
+}
+function refundStatusClass(e){
+  const rs=normalizeReimbursements(e);
+  if(!rs.length) return "refund-none";
+  return rs.every(r=>r.refunded) ? "refund-paid" : "refund-pending";
+}
+
+async function loadPeople(){
+  if(!currentUser) return;
+  const {data,error}=await db.from("people").select("id,name,created_at").eq("user_id",currentUser.id).order("name",{ascending:true});
+  if(error){ alert("No se pudieron cargar las personas: "+error.message); return; }
+  people=data||[];
+  if(!people.length){
+    const defaults=[{user_id:currentUser.id,name:"Padre"},{user_id:currentUser.id,name:"Madre"}];
+    const {error:insertError}=await db.from("people").insert(defaults);
+    if(!insertError){
+      const again=await db.from("people").select("id,name,created_at").eq("user_id",currentUser.id).order("name",{ascending:true});
+      if(!again.error) people=again.data||[];
+    }
+  }
+  renderRefundPeople(); renderPeopleManager(); populateFilters();
+}
+async function loadExpenses(){
+  if(!currentUser) return;
+  const {data,error}=await db.from("expenses").select("*").eq("user_id",currentUser.id).order("expense_date",{ascending:false}).order("created_at",{ascending:false});
+  if(error){ alert("No se pudieron cargar los gastos: "+error.message); return; }
+  expenses=data||[]; refreshUI();
+}
+function populateFilters(){
+  const cats=[...new Set(expenses.map(e=>e.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es"));
+  const personNames=new Set(people.map(p=>p.name));
+  expenses.forEach(e=>normalizeReimbursements(e).forEach(r=>personNames.add(r.name)));
+  const peopleList=[...personNames].sort((a,b)=>a.localeCompare(b,"es"));
+  const cf=$("categoryFilter"), pf=$("personFilter"), oldC=cf.value, oldP=pf.value;
+  cf.innerHTML='<option value="all">Todas las categorías</option>'+cats.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+  pf.innerHTML='<option value="all">Todas las personas</option>'+peopleList.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+  if(cats.includes(oldC)) cf.value=oldC; if(peopleList.includes(oldP)) pf.value=oldP;
+}
+function filteredExpenses(){
+  const q=$("search").value.trim().toLowerCase(), period=$("period").value, cat=$("categoryFilter").value, person=$("personFilter").value;
+  return expenses.filter(e=>{
+    const refundNames=normalizeReimbursements(e).map(r=>r.name);
+    const text=(e.concept+" "+refundNames.join(" ")+" "+(e.notes||"")).toLowerCase();
+    const periodOk=period==="all"||(period==="week"&&isInCurrentWeek(e.expense_date))||(period==="month"&&isInCurrentMonth(e.expense_date));
+    const catOk=cat==="all"||e.category===cat;
+    const personOk=person==="all"||refundNames.includes(person);
+    return (!q||text.includes(q))&&periodOk&&catOk&&personOk;
+  });
+}
+function refreshUI(){
+  populateFilters();
+  const shown=filteredExpenses();
+  $("expenseRows").innerHTML=shown.map(e=>{
+    const rs=normalizeReimbursements(e);
+    const peopleBadge=rs.length?'<span class="badge ok">'+escapeHtml(rs.map(r=>r.name).join(" + "))+'</span>':'—';
+    const statusBadge=rs.length?'<span class="badge '+refundStatusClass(e)+'">'+escapeHtml(refundStatusText(e))+'</span>':'<span class="badge refund-none">Sin reembolso</span>';
+    const notesHtml=e.notes?'<div class="small">'+escapeHtml(e.notes)+'</div>':'';
+    return `<tr><td>${dateLabel(e.expense_date)}</td><td><strong>${escapeHtml(e.concept)}</strong>${notesHtml}</td><td><span class="badge">${escapeHtml(e.category||"Otros")}</span></td><td class="amount">${money(e.amount)}</td><td>${peopleBadge}</td><td>${statusBadge}</td><td style="white-space:nowrap"><button class="icon-btn" onclick="editExpense('${e.id}')">Editar</button> <button class="icon-btn delete" onclick="deleteExpense('${e.id}')">Borrar</button></td></tr>`;
+  }).join("");
+  $("emptyState").classList.toggle("hidden",shown.length!==0);
+  $("filteredTotal").textContent=money(shown.reduce((s,e)=>s+effectiveAmount(e),0));
+  $("filterInfo").textContent=`${shown.length} gasto${shown.length===1?"":"s"} mostrado${shown.length===1?"":"s"}`;
+  $("monthTotal").textContent=money(expenses.filter(e=>isInCurrentMonth(e.expense_date)).reduce((s,e)=>s+effectiveAmount(e),0));
+  $("weekTotal").textContent=money(expenses.filter(e=>isInCurrentWeek(e.expense_date)).reduce((s,e)=>s+effectiveAmount(e),0));
+  $("owedTotal").textContent=money(expenses.reduce((s,e)=>s+outstandingAmount(e),0));
+  $("countTotal").textContent=expenses.length;
+}
+
+function getSelectedRefundmentsFromUI(){
+  return [...document.querySelectorAll('#refundPeopleList .person-option')].filter(row=>row.querySelector('.person-select').checked).map(row=>({
+    name:row.dataset.name,
+    refunded:row.querySelector('.person-paid').checked
+  }));
+}
+function renderRefundPeople(selected=[]){
+  const wrap=$("refundPeopleList"); if(!wrap) return;
+  const selectedMap=new Map(selected.map(x=>[String(x.name).toLowerCase(),!!x.refunded]));
+  if(!people.length){ wrap.innerHTML='<div class="people-empty">No tienes personas añadidas. Pulsa «Gestionar personas» para crear una.</div>'; return; }
+  wrap.innerHTML=people.map(p=>{
+    const key=p.name.toLowerCase(), isSel=selectedMap.has(key), paid=selectedMap.get(key)===true;
+    return `<div class="person-option" data-name="${escapeHtml(p.name)}"><label class="person-check"><input class="person-select" type="checkbox" ${isSel?'checked':''}> ${escapeHtml(p.name)}</label><label class="paid-check"><input class="person-paid" type="checkbox" ${paid?'checked':''} ${isSel?'':'disabled'}> Reembolsado</label></div>`;
+  }).join("");
+  wrap.querySelectorAll('.person-select').forEach(cb=>cb.addEventListener('change',()=>{
+    const row=cb.closest('.person-option'), paid=row.querySelector('.person-paid');
+    paid.disabled=!cb.checked; if(!cb.checked) paid.checked=false;
+  }));
+}
+function renderPeopleManager(){
+  const list=$("peopleManagerList"); if(!list) return;
+  if(!people.length){list.innerHTML='<div class="people-empty">No hay personas añadidas.</div>';return;}
+  list.innerHTML=people.map(p=>`<div class="person-manager-item"><span>${escapeHtml(p.name)}</span><button class="icon-btn delete" type="button" onclick="deletePerson('${p.id}')">Eliminar</button></div>`).join("");
+}
+async function addPerson(){
+  const name=$("newPersonName").value.trim(); if(!name) return;
+  if(people.some(p=>p.name.trim().toLowerCase()===name.toLowerCase())){alert("Esa persona ya existe.");return;}
+  const {data,error}=await db.from("people").insert({user_id:currentUser.id,name}).select("id,name,created_at").single();
+  if(error){alert("No se pudo añadir la persona: "+error.message);return;}
+  people.push(data); people.sort((a,b)=>a.name.localeCompare(b.name,"es")); $("newPersonName").value=""; renderPeopleManager(); renderRefundPeople(); populateFilters();
+}
+window.deletePerson=async id=>{
+  const p=people.find(x=>x.id===id); if(!p) return;
+  if(!confirm(`¿Eliminar a "${p.name}" de la lista? Los gastos ya guardados no se borrarán.`)) return;
+  const {error}=await db.from("people").delete().eq("id",id).eq("user_id",currentUser.id);
+  if(error){alert("No se pudo eliminar: "+error.message);return;}
+  people=people.filter(x=>x.id!==id); renderPeopleManager(); renderRefundPeople(); populateFilters();
+};
+
+function resetExpenseForm(){
+  editingId=null; $("formTitle").textContent="Nuevo gasto"; $("saveBtn").textContent="Guardar gasto"; $("cancelEditBtn").classList.add("hidden");
+  $("expenseForm").reset(); $("expenseDate").value=todayISO(); $("category").value="Otros"; $("refundPeopleWrap").classList.add("hidden"); renderRefundPeople([]);
+}
+function fillExpense(e){
+  editingId=e.id; $("formTitle").textContent="Editar gasto"; $("saveBtn").textContent="Guardar cambios"; $("cancelEditBtn").classList.remove("hidden");
+  $("concept").value=e.concept; $("amount").value=e.amount; $("expenseDate").value=e.expense_date; $("category").value=e.category||"Otros";
+  const rs=normalizeReimbursements(e); $("refundable").checked=rs.length>0; $("refundPeopleWrap").classList.toggle("hidden",!rs.length); renderRefundPeople(rs);
+  $("notes").value=e.notes||""; window.scrollTo({top:0,behavior:"smooth"});
+}
+window.editExpense=id=>{const e=expenses.find(x=>x.id===id);if(e)fillExpense(e);};
+window.deleteExpense=async id=>{const e=expenses.find(x=>x.id===id);if(!e)return;if(!confirm(`¿Borrar "${e.concept}" por ${money(e.amount)}?`))return;const {error}=await db.from("expenses").delete().eq("id",id).eq("user_id",currentUser.id);if(error){alert("No se pudo borrar: "+error.message);return}await loadExpenses();};
+
+$("tabLogin").onclick=()=>setAuthTab("login"); $("tabRegister").onclick=()=>setAuthTab("register");
+$("refundable").onchange=()=>{const on=$("refundable").checked;$("refundPeopleWrap").classList.toggle("hidden",!on);if(on)renderRefundPeople([]);};
+$("managePeopleBtn").onclick=()=>{$("peopleModal").classList.remove("hidden");renderPeopleManager();$("newPersonName").focus();};
+$("closePeopleModal").onclick=()=>$("peopleModal").classList.add("hidden");
+$("addPersonBtn").onclick=addPerson;
+$("newPersonName").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addPerson();}});
+$("cancelEditBtn").onclick=resetExpenseForm;
+
+$("loginForm").onsubmit=async ev=>{ev.preventDefault();showAuthMessage("Entrando...");const {error}=await db.auth.signInWithPassword({email:$("loginEmail").value.trim(),password:$("loginPassword").value});if(error)showAuthMessage("No se pudo iniciar sesión. Comprueba el email y la contraseña.","error");};
+$("registerForm").onsubmit=async ev=>{ev.preventDefault();const name=$("registerName").value.trim(),email=$("registerEmail").value.trim(),p1=$("registerPassword").value,p2=$("registerPassword2").value;if(p1!==p2){showAuthMessage("Las contraseñas no coinciden.","error");return}showAuthMessage("Creando tu cuenta...");const {data,error}=await db.auth.signUp({email,password:p1,options:{data:{full_name:name}}});if(error){showAuthMessage(error.message,"error");return}if(data.session)showAuthMessage("Cuenta creada correctamente.","ok");else showAuthMessage("Cuenta creada. Revisa tu email para confirmar la cuenta y después inicia sesión.","ok");};
+$("forgotBtn").onclick=()=>{$("resetEmail").value=$("loginEmail").value;$("resetMessage").className="message hidden";$("modal").classList.remove("hidden")};
+$("closeModal").onclick=()=>$("modal").classList.add("hidden");
+$("resetForm").onsubmit=async ev=>{ev.preventDefault();$("resetMessage").className="message";$("resetMessage").textContent="Enviando...";const redirect=window.location.href.split("#")[0];const {error}=await db.auth.resetPasswordForEmail($("resetEmail").value.trim(),{redirectTo:redirect});$("resetMessage").className="message "+(error?"error":"ok");$("resetMessage").textContent=error?error.message:"Si el email existe, recibirás un enlace para restablecer la contraseña.";};
+
+$("expenseForm").onsubmit=async ev=>{
+  ev.preventDefault(); if(!currentUser)return;
+  const refundable=$("refundable").checked, reimbursements=refundable?getSelectedRefundmentsFromUI():[];
+  const payload={user_id:currentUser.id,concept:$("concept").value.trim(),amount:Number($("amount").value),expense_date:$("expenseDate").value,category:$("category").value,person:null,other_person:null,reimbursements,split2:false,notes:$("notes").value.trim()||null};
+  if(!payload.concept||!payload.amount||payload.amount<=0||!payload.expense_date){alert("Completa los campos obligatorios.");return}
+  if(refundable&&!reimbursements.length){alert("Selecciona al menos una persona que deba reembolsarte.");return}
+  let result=editingId?await db.from("expenses").update(payload).eq("id",editingId).eq("user_id",currentUser.id):await db.from("expenses").insert(payload);
+  if(result.error){alert("No se pudo guardar: "+result.error.message);return}
+  resetExpenseForm(); await loadExpenses();
+};
+
+["search","period","categoryFilter","personFilter"].forEach(id=>$(id).addEventListener("input",refreshUI));
+$("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;expenses=[];people=[];showAuth();setAuthTab("login")};
+$("backupBtn").onclick=()=>{const blob=new Blob([JSON.stringify({exported_at:new Date().toISOString(),version:6,expenses,people},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`gastos-backup-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href);};
+async function exportImage(){const canvas=await html2canvas($("reportArea"),{backgroundColor:"#10141c",scale:2});const a=document.createElement("a");a.href=canvas.toDataURL("image/png");a.download=`gastos-resumen-${todayISO()}.png`;a.click();}
+$("exportPngBtn").onclick=async()=>{try{await exportImage()}catch(e){alert("No se pudo generar el PNG.")}};
+$("exportPdfBtn").onclick=async()=>{try{const canvas=await html2canvas($("reportArea"),{backgroundColor:"#10141c",scale:2});const img=canvas.toDataURL("image/png"),{jsPDF}=window.jspdf,pdf=new jsPDF({orientation:"p",unit:"mm",format:"a4"});const w=190,h=canvas.height*w/canvas.width;pdf.setFontSize(18);pdf.text("Resumen de gastos",10,15);pdf.setFontSize(9);pdf.text(new Date().toLocaleDateString("es-ES"),10,21);pdf.addImage(img,"PNG",10,28,w,Math.min(h,250));pdf.save(`gastos-resumen-${todayISO()}.pdf`);}catch(e){alert("No se pudo generar el PDF.")}};
+
+async function boot(){
+  $("expenseDate").value=todayISO();
+  const {data:{session}}=await db.auth.getSession();
+  if(session){currentUser=session.user;showApp();setUser();await loadPeople();await loadExpenses();}else showAuth();
+}
+function setUser(){const meta=currentUser.user_metadata||{};$("userName").textContent=meta.full_name||"Mi cuenta";$("userEmail").textContent=currentUser.email||"";}
+db.auth.onAuthStateChange(async(event,session)=>{if(session){currentUser=session.user;showApp();setUser();await loadPeople();await loadExpenses();}else{currentUser=null;expenses=[];people=[];showAuth();}});
+boot();
+</script>
+</body>
+</html>
